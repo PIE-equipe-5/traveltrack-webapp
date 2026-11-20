@@ -5,6 +5,7 @@ import 'package:traveltrack/src/viewmodels/analytics_consent_viewmodel.dart';
 import 'package:traveltrack/src/views/analytics_consent_screen.dart';
 import 'package:traveltrack/src/views/auth/forgot_password_screen.dart';
 import 'package:traveltrack/src/views/auth/reset_password_screen.dart';
+import 'package:traveltrack/src/views/legal/terms_of_use_screen.dart';
 
 import '../services/supabase_client.dart';
 import '../viewmodels/auth_viewmodel.dart';
@@ -19,6 +20,12 @@ import '../views/trip_detail_screen.dart';
 import 'go_router_refresh_stream.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
+
+/// Adresse de l'écran des conditions d'utilisation.
+const termsOfUseLocation = '/legal/terms';
+
+/// Pages consultables avec ou sans compte (documents légaux).
+const _publicLocations = {termsOfUseLocation};
 
 final GoRouter appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
@@ -47,6 +54,8 @@ final GoRouter appRouter = GoRouter(
           : analyticsConsentLocation;
     }
     if (state.matchedLocation == analyticsConsentLocation) return '/map';
+
+    if (_publicLocations.contains(state.matchedLocation)) return null;
 
     final loggedIn = authViewModel.isAuthenticated;
     if (state.matchedLocation == resetPasswordLocation) {
@@ -90,6 +99,11 @@ final GoRouter appRouter = GoRouter(
       path: '/auth/reset-password',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const ResetPasswordScreen(),
+    ),
+    GoRoute(
+      path: termsOfUseLocation,
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const TermsOfUseScreen(),
     ),
 
     // ===== MAIN APP ROUTES =====

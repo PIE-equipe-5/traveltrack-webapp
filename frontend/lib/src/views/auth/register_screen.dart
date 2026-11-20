@@ -1,6 +1,9 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:traveltrack/src/constants/app_strings.dart';
 import 'package:traveltrack/src/models/auth_form_validators.dart';
+import 'package:traveltrack/src/navigation/app_router.dart';
 import 'package:traveltrack/src/viewmodels/auth_viewmodel.dart';
 import 'package:traveltrack/src/widgets/auth_form_field.dart';
 import 'package:traveltrack/src/widgets/auth_link_row.dart';
@@ -23,9 +26,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
   late TextEditingController _confirmPasswordController;
   bool _acceptedTerms = false;
 
+  /// Rend "conditions d'utilisation" cliquable sans cocher la case : ce
+  /// geste l'emporte sur celui de la ligne entière.
+  late final TapGestureRecognizer _termsOfUseLinkRecognizer;
+
   @override
   void initState() {
     super.initState();
+    _termsOfUseLinkRecognizer = TapGestureRecognizer()
+      ..onTap = _openTermsOfUse;
     _firstNameController = TextEditingController();
     _lastNameController = TextEditingController();
     _emailController = TextEditingController();
@@ -35,6 +44,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
+    _termsOfUseLinkRecognizer.dispose();
     _firstNameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
@@ -57,6 +67,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       firstName: _firstNameController.text.trim(),
       lastName: _lastNameController.text.trim(),
     );
+  }
+
+  /// Ouvre les conditions par-dessus le formulaire, pour que la flèche retour
+  /// ramène à la saisie en cours sans la perdre.
+  void _openTermsOfUse() {
+    context.push(termsOfUseLocation);
   }
 
   void _goToLogin() {
@@ -144,7 +160,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // Terms & Conditions Checkbox
+                // Case et texte cochent l'acceptation ; seul le lien ouvre
+                // les conditions.
                 CheckboxListTile(
                   value: _acceptedTerms,
                   onChanged: (value) {
@@ -152,17 +169,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       _acceptedTerms = value ?? false;
                     });
                   },
+                  controlAffinity: ListTileControlAffinity.leading,
                   contentPadding: EdgeInsets.zero,
                   title: Text.rich(
                     TextSpan(
-                      text: 'J\'accepte les ',
+                      text: AppStrings.termsAcceptancePrefix,
                       style: TextStyle(color: colorScheme.onSurfaceVariant),
                       children: [
                         TextSpan(
-                          text: 'conditions d\'utilisation',
+                          text: AppStrings.termsOfUseLinkLabel,
+                          recognizer: _termsOfUseLinkRecognizer,
                           style: TextStyle(
                             color: colorScheme.primary,
                             fontWeight: FontWeight.bold,
+                            decoration: TextDecoration.underline,
+                            decorationColor: colorScheme.primary,
                           ),
                         ),
                       ],
