@@ -16,4 +16,7 @@ abstract final class AppStrings {
   static const analyticsConsentSettingTitle = 'Mesure d\'audience';
   static const analyticsConsentSettingDescription =
       'Partager des statistiques d\'utilisation pour améliorer l\'application.';
+
+  static const messageDialogCloseButton = 'OK';
+  static const signInFailedTitle = 'Connexion échouée';
 }

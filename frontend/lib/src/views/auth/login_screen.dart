@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:traveltrack/src/constants/app_strings.dart';
 import 'package:traveltrack/src/models/auth_form_validators.dart';
 import 'package:traveltrack/src/viewmodels/auth_viewmodel.dart';
 import 'package:traveltrack/src/widgets/auth_form_field.dart';
 import 'package:traveltrack/src/widgets/auth_link_row.dart';
 import 'package:traveltrack/src/widgets/auth_screen_header.dart';
 import 'package:traveltrack/src/widgets/auth_submit_section.dart';
+import 'package:traveltrack/src/widgets/message_dialog.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -39,9 +41,19 @@ class _LoginScreenState extends State<LoginScreen> {
     // Pas de navigation manuelle ici : GoRouter réagit automatiquement au
     // changement de session via `refreshListenable` + `redirect` (voir
     // app_router.dart) et nous enverra sur /map dès que la connexion réussit.
-    await authViewModel.signIn(
+    final isSignedIn = await authViewModel.signIn(
       email: _emailController.text.trim(),
       password: _passwordController.text,
+    );
+
+    final signInErrorMessage = authViewModel.errorMessage;
+    if (isSignedIn || signInErrorMessage == null || !mounted) return;
+    // La popup remplace le message d'erreur affiché sous le bouton.
+    authViewModel.clearMessages();
+    await showMessageDialog(
+      context: context,
+      title: AppStrings.signInFailedTitle,
+      message: signInErrorMessage,
     );
   }
 
@@ -147,17 +159,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 : authViewModel.signInWithGoogle,
                             icon: const Text('G'),
                             label: const Text('Continuer avec Google'),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed: isLoading
-                                ? null
-                                : authViewModel.signInWithFacebook,
-                            icon: const Text('f'),
-                            label: const Text('Continuer avec Facebook'),
                           ),
                         ),
                       ],
