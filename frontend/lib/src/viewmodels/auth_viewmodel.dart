@@ -90,9 +90,6 @@ class AuthViewModel extends ChangeNotifier {
 
   Future<bool> signInWithGoogle() => _signInWithProvider(OAuthProvider.google);
 
-  Future<bool> signInWithFacebook() =>
-      _signInWithProvider(OAuthProvider.facebook);
-
   Future<bool> sendPasswordResetEmail(String email) {
     return _run(() async {
       await _authService.sendPasswordResetEmail(email);

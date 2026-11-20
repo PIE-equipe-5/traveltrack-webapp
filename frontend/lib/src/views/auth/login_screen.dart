@@ -149,17 +149,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             label: const Text('Continuer avec Google'),
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed: isLoading
-                                ? null
-                                : authViewModel.signInWithFacebook,
-                            icon: const Text('f'),
-                            label: const Text('Continuer avec Facebook'),
-                          ),
-                        ),
                       ],
                     );
                   },
