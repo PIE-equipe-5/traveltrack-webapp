@@ -18,6 +18,7 @@ abstract final class AppStrings {
       'Partager des statistiques d\'utilisation pour améliorer l\'application.';
 
   static const messageDialogCloseButton = 'OK';
+  static const backButtonTooltip = 'Retour';
 
   static const termsAcceptancePrefix = 'J\'accepte les ';
   static const termsOfUseLinkLabel = 'conditions d\'utilisation';
