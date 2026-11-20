@@ -105,6 +105,25 @@ class AuthViewModel extends ChangeNotifier {
     });
   }
 
+  /// Abandonne la réinitialisation : ferme la session ouverte par le lien
+  /// reçu par email, puis le routeur ramène à l'écran de connexion. Le mot
+  /// de passe actuel reste inchangé.
+  Future<void> cancelPasswordRecovery() async {
+    try {
+      await _authService.signOut();
+    } catch (_) {
+      // Supabase retire la session de l'appareil avant de prévenir le
+      // serveur : même si l'appel réseau échoue, l'utilisateur est bien
+      // déconnecté ici, et peut quitter l'écran.
+    } finally {
+      // Après la déconnexion seulement : sinon le routeur, voyant encore une
+      // session, enverrait l'utilisateur sur la carte au lieu de la connexion.
+      _errorMessage = null;
+      _isPasswordRecoveryPending.value = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> signOut() async {
     await _analyticsService.captureEvent(AnalyticsEvents.userLoggedOut);
     await _authService.signOut();
