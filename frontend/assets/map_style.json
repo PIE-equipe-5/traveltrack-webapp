@@ -76,6 +76,60 @@
         "text-halo-color": "#f4f1e8",
         "text-halo-width": 1
       }
+    },
+    {
+      "id": "village-names",
+      "type": "symbol",
+      "source": "openmaptiles",
+      "source-layer": "place",
+      "minzoom": 9,
+      "filter": ["in", "class", "village", "hamlet"],
+      "layout": {
+        "text-field": ["get", "name"],
+        "text-font": ["Noto Sans Regular"],
+        "text-size": 12
+      },
+      "paint": {
+        "text-color": "#555555",
+        "text-halo-color": "#f4f1e8",
+        "text-halo-width": 1
+      }
+    },
+    {
+      "id": "town-names",
+      "type": "symbol",
+      "source": "openmaptiles",
+      "source-layer": "place",
+      "minzoom": 6,
+      "filter": ["==", "class", "town"],
+      "layout": {
+        "text-field": ["get", "name"],
+        "text-font": ["Noto Sans Regular"],
+        "text-size": 13
+      },
+      "paint": {
+        "text-color": "#4c4c4c",
+        "text-halo-color": "#f4f1e8",
+        "text-halo-width": 1
+      }
+    },
+    {
+      "id": "city-names",
+      "type": "symbol",
+      "source": "openmaptiles",
+      "source-layer": "place",
+      "minzoom": 3,
+      "filter": ["==", "class", "city"],
+      "layout": {
+        "text-field": ["get", "name"],
+        "text-font": ["Noto Sans Regular"],
+        "text-size": 14
+      },
+      "paint": {
+        "text-color": "#414141",
+        "text-halo-color": "#f4f1e8",
+        "text-halo-width": 1
+      }
     }
   ]
 }

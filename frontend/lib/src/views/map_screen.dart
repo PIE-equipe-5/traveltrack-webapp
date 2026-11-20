@@ -25,6 +25,7 @@ class _MapScreenState extends State<MapScreen> {
   // Centre affiché tant que la position de l'utilisateur est inconnue.
   static const _defaultMapCenter = LatLng(48.8566, 2.3522); // Paris
   static const _proximityCircleRadiusInMeters = 80.0;
+  static const _minimumMapZoom = 5.5;
   static const _userRecenterZoom = 16.0;
 
   List<Quest> _quests = [];
@@ -180,6 +181,7 @@ class _MapScreenState extends State<MapScreen> {
                 options: MapOptions(
                   initialCenter: _defaultMapCenter,
                   initialZoom: 14,
+                  minZoom: _minimumMapZoom,
                   onMapReady: _onMapReady,
                   onPositionChanged: (camera, hasGesture) {
                     if (hasGesture) _locationViewModel.onMapMovedByUser();
@@ -221,24 +223,15 @@ class _MapScreenState extends State<MapScreen> {
                       if (userLatLng != null)
                         Marker(
                           point: userLatLng,
-                          width: 46,
-                          height: 46,
-                          child: Container(
+                          width: 14,
+                          height: 14,
+                          child: const DecoratedBox(
                             decoration: BoxDecoration(
-                              color: const Color(0xFF2F6FED),
+                              color: Color(0xFF2F6FED),
                               shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black26,
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.my_location,
-                              color: Colors.white,
-                              size: 22,
+                              border: Border.fromBorderSide(
+                                BorderSide(color: Colors.white, width: 2),
+                              ),
                             ),
                           ),
                         ),
