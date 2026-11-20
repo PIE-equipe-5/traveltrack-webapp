@@ -6,7 +6,9 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:traveltrack/src/constants/app_strings.dart';
 import 'package:traveltrack/src/constants/location_strings.dart';
+import 'package:traveltrack/src/models/map_rotation.dart';
 import 'package:traveltrack/src/viewmodels/map_location_viewmodel.dart';
 
 import '../models/quest.dart';
@@ -19,11 +21,18 @@ class MapScreen extends StatefulWidget {
   State<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends State<MapScreen> {
+class _MapScreenState extends State<MapScreen>
+    with SingleTickerProviderStateMixin {
   // Centre affiché tant que la position de l'utilisateur est inconnue.
   static const _defaultMapCenter = LatLng(48.8566, 2.3522); // Paris
   static const _proximityCircleRadiusInMeters = 80.0;
   static const _userRecenterZoom = 16.0;
+  static const _northResetAnimationDuration = Duration(milliseconds: 300);
+
+  late final AnimationController _northResetAnimationController =
+      AnimationController(vsync: this, duration: _northResetAnimationDuration)
+        ..addListener(_applyNorthResetAnimationStep);
+  Animation<double>? _northResetRotationInDegrees;
 
   List<Quest> _quests = [];
   String? _error;
@@ -52,6 +61,7 @@ class _MapScreenState extends State<MapScreen> {
     _recenterRequestSubscription?.cancel();
     _locationViewModel.removeListener(_onUserLocationStateChanged);
     _locationViewModel.dispose();
+    _northResetAnimationController.dispose();
     _mapController.dispose();
     super.dispose();
   }
@@ -86,6 +96,30 @@ class _MapScreenState extends State<MapScreen> {
       ),
       targetZoom,
     );
+  }
+
+  /// Bouton boussole : tourne la carte en douceur pour remettre le nord en
+  /// haut, sans changer ni le centre ni le zoom.
+  void _resetMapToNorth() {
+    if (!_isMapReady) return;
+    final currentRotation = _mapController.camera.rotation;
+    final targetRotation = northUpRotationTarget(currentRotation);
+    if (currentRotation == targetRotation) return;
+
+    _northResetRotationInDegrees =
+        Tween<double>(begin: currentRotation, end: targetRotation).animate(
+          CurvedAnimation(
+            parent: _northResetAnimationController,
+            curve: Curves.easeOut,
+          ),
+        );
+    _northResetAnimationController.forward(from: 0);
+  }
+
+  void _applyNorthResetAnimationStep() {
+    final northResetRotation = _northResetRotationInDegrees;
+    if (northResetRotation == null) return;
+    _mapController.rotate(northResetRotation.value);
   }
 
   LatLng? get _userLatLng {
@@ -180,7 +214,10 @@ class _MapScreenState extends State<MapScreen> {
                   initialZoom: 14,
                   onMapReady: _onMapReady,
                   onPositionChanged: (camera, hasGesture) {
-                    if (hasGesture) _locationViewModel.onMapMovedByUser();
+                    if (!hasGesture) return;
+                    // L'utilisateur reprend la main : on n'impose plus le nord.
+                    _northResetAnimationController.stop();
+                    _locationViewModel.onMapMovedByUser();
                   },
                 ),
                 children: [
@@ -292,29 +329,37 @@ class _MapScreenState extends State<MapScreen> {
               ),
             ),
 
-            // --- Bouton boussole (haut droite) ---
-            Positioned(
-              top: 12,
-              right: 12,
-              child: _RoundIconButton(
-                icon: Icons.explore_outlined,
-                onTap: () {},
-              ),
-            ),
-
-            // --- Bouton localisation ---
+            // --- Boutons boussole + localisation (bas droite) ---
             Positioned(
               right: 12,
               bottom: nearest != null ? 190 : 20,
-              child: _RoundIconButton(
-                icon: _locationButtonIcon,
-                iconColor: isFollowingUser
-                    ? Theme.of(context).colorScheme.primary
-                    : null,
-                isLoading:
-                    _locationViewModel.status == UserLocationStatus.locating,
-                semanticLabel: LocationStrings.recenterButtonLabel,
-                onTap: _locationViewModel.onRecenterButtonPressed,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Seule la boussole se reconstruit quand la carte tourne.
+                  StreamBuilder<MapEvent>(
+                    stream: _mapController.mapEventStream,
+                    builder: (context, mapEventSnapshot) => _RoundIconButton(
+                      icon: Icons.navigation,
+                      iconRotationInRadians:
+                          mapEventSnapshot.data?.camera.rotationRad ?? 0,
+                      semanticLabel: AppStrings.resetMapNorthButtonLabel,
+                      onTap: _resetMapToNorth,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _RoundIconButton(
+                    icon: _locationButtonIcon,
+                    iconColor: isFollowingUser
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+                    isLoading:
+                        _locationViewModel.status ==
+                        UserLocationStatus.locating,
+                    semanticLabel: LocationStrings.recenterButtonLabel,
+                    onTap: _locationViewModel.onRecenterButtonPressed,
+                  ),
+                ],
               ),
             ),
 
@@ -487,6 +532,7 @@ class _RoundIconButton extends StatelessWidget {
     this.iconColor,
     this.isLoading = false,
     this.semanticLabel,
+    this.iconRotationInRadians = 0,
   });
 
   final IconData icon;
@@ -494,6 +540,10 @@ class _RoundIconButton extends StatelessWidget {
   final Color? iconColor;
   final bool isLoading;
   final String? semanticLabel;
+
+  /// Fait tourner l'icône, par exemple pour que l'aiguille de la boussole
+  /// pointe toujours vers le nord de la carte.
+  final double iconRotationInRadians;
 
   @override
   Widget build(BuildContext context) {
@@ -521,7 +571,14 @@ class _RoundIconButton extends StatelessWidget {
                   padding: EdgeInsets.all(12),
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : Icon(icon, color: iconColor ?? Colors.black87, size: 22),
+              : Transform.rotate(
+                  angle: iconRotationInRadians,
+                  child: Icon(
+                    icon,
+                    color: iconColor ?? Colors.black87,
+                    size: 22,
+                  ),
+                ),
         ),
       ),
     );

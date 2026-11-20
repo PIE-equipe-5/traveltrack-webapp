@@ -19,6 +19,7 @@ abstract final class AppStrings {
 
   static const messageDialogCloseButton = 'OK';
   static const backButtonTooltip = 'Retour';
+  static const resetMapNorthButtonLabel = 'Remettre le nord en haut';
 
   static const termsAcceptancePrefix = 'J\'accepte les ';
   static const termsOfUseLinkLabel = 'conditions d\'utilisation';
