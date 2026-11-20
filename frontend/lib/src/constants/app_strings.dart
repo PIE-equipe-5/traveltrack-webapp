@@ -18,5 +18,11 @@ abstract final class AppStrings {
       'Partager des statistiques d\'utilisation pour améliorer l\'application.';
 
   static const messageDialogCloseButton = 'OK';
+
+  static const termsAcceptancePrefix = 'J\'accepte les ';
+  static const termsOfUseLinkLabel = 'conditions d\'utilisation';
+  static const legalDocumentDraftNotice =
+      'Version provisoire : ce texte est en cours de rédaction et sera '
+      'remplacé par la version définitive.';
   static const signInFailedTitle = 'Connexion échouée';
 }
