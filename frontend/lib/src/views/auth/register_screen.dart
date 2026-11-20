@@ -5,6 +5,7 @@ import 'package:traveltrack/src/constants/app_strings.dart';
 import 'package:traveltrack/src/models/auth_form_validators.dart';
 import 'package:traveltrack/src/navigation/app_router.dart';
 import 'package:traveltrack/src/viewmodels/auth_viewmodel.dart';
+import 'package:traveltrack/src/widgets/auth_back_button.dart';
 import 'package:traveltrack/src/widgets/auth_form_field.dart';
 import 'package:traveltrack/src/widgets/auth_link_row.dart';
 import 'package:traveltrack/src/widgets/auth_screen_header.dart';
@@ -94,12 +95,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: _goToLogin,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
+                AuthBackButton(onPressed: _goToLogin),
                 const SizedBox(height: 16),
 
                 const AuthScreenHeader(

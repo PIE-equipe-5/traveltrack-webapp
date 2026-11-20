@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:traveltrack/src/models/auth_form_validators.dart';
 import 'package:traveltrack/src/viewmodels/auth_viewmodel.dart';
+import 'package:traveltrack/src/widgets/auth_back_button.dart';
 import 'package:traveltrack/src/widgets/auth_form_field.dart';
 import 'package:traveltrack/src/widgets/auth_screen_header.dart';
 import 'package:traveltrack/src/widgets/auth_submit_section.dart';
@@ -51,6 +52,17 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Abandonne la réinitialisation et ramène à la connexion.
+                ListenableBuilder(
+                  listenable: authViewModel,
+                  builder: (context, _) => AuthBackButton(
+                    onPressed: authViewModel.isLoading
+                        ? null
+                        : authViewModel.cancelPasswordRecovery,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
                 const AuthScreenHeader(
                   title: 'Nouveau mot de passe',
                   subtitle: 'Choisis le mot de passe de ton compte',
