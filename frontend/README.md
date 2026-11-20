@@ -1,6 +1,8 @@
 # TravelTrack (Flutter)
 
-Flutter frontend for TravelTrack — bottom-tab navigation (Home / Map), a Leaflet/OpenStreetMap view via [webview_flutter](https://pub.dev/packages/webview_flutter), and Supabase auth/data via [supabase_flutter](https://pub.dev/packages/supabase_flutter).
+Flutter frontend for TravelTrack — bottom-tab navigation, a FlutterMap view with OpenFreeMap vector tiles, and Supabase auth/data via [supabase_flutter](https://pub.dev/packages/supabase_flutter).
+
+The map style is defined in `assets/map_style.json`. It shows roads, street names, water and green areas without buildings. OpenFreeMap uses OpenStreetMap data and does not require an API key.
 
 ## Getting started
 

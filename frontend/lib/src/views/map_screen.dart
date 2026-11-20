@@ -3,11 +3,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_vector_tiles/flutter_map_vector_tiles.dart' as vt;
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:traveltrack/src/constants/location_strings.dart';
 import 'package:traveltrack/src/viewmodels/map_location_viewmodel.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/quest.dart';
 import '../services/quest_service.dart';
@@ -184,11 +186,7 @@ class _MapScreenState extends State<MapScreen> {
                   },
                 ),
                 children: [
-                  TileLayer(
-                    urlTemplate:
-                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.traveltrack.app',
-                  ),
+                  const _MapBackground(),
                   // Cercle de proximité autour de l'utilisateur
                   if (userLatLng != null)
                     CircleLayer(
@@ -248,6 +246,12 @@ class _MapScreenState extends State<MapScreen> {
                   ),
                 ],
               ),
+            ),
+
+            Positioned(
+              left: 8,
+              bottom: nearest != null ? 190 : 8,
+              child: const _MapAttribution(),
             ),
 
             // --- Barre de recherche + filtres ---
@@ -333,6 +337,125 @@ class _MapScreenState extends State<MapScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _MapAttribution extends StatelessWidget {
+  const _MapAttribution();
+
+  Future<void> _openLink(BuildContext context, String url) async {
+    try {
+      if (await launchUrl(Uri.parse(url))) return;
+    } catch (error, stackTrace) {
+      debugPrint("Impossible d'ouvrir l'attribution : $error\n$stackTrace");
+    }
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Impossible d'ouvrir le lien.")),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const textStyle = TextStyle(fontSize: 10, color: Colors.black87);
+    return Material(
+      color: Colors.white.withValues(alpha: 0.9),
+      borderRadius: BorderRadius.circular(4),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            InkWell(
+              onTap: () => _openLink(context, 'https://openmaptiles.org/'),
+              child: const Text('© OpenMapTiles', style: textStyle),
+            ),
+            const Text(' · ', style: textStyle),
+            InkWell(
+              onTap: () =>
+                  _openLink(context, 'https://www.openstreetmap.org/copyright'),
+              child: const Text('© OpenStreetMap', style: textStyle),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MapBackground extends StatefulWidget {
+  const _MapBackground();
+
+  @override
+  State<_MapBackground> createState() => _MapBackgroundState();
+}
+
+class _MapBackgroundState extends State<_MapBackground> {
+  vt.Style? _style;
+  Object? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStyle();
+  }
+
+  Future<void> _loadStyle() async {
+    setState(() => _error = null);
+    try {
+      final style = await vt.StyleReader(
+        uri: 'asset://assets/map_style.json',
+        logger: const vt.Logger.console(),
+      ).read();
+      if (!mounted) {
+        style.dispose();
+        return;
+      }
+      setState(() => _style = style);
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Impossible de charger le fond de carte : $error\n$stackTrace',
+      );
+      if (mounted) setState(() => _error = error);
+    }
+  }
+
+  @override
+  void dispose() {
+    _style?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final style = _style;
+    if (style != null) {
+      return vt.VectorTileLayer(
+        theme: style.theme,
+        tileProviders: style.providers,
+        glyphs: style.glyphs,
+        logger: const vt.Logger.console(),
+      );
+    }
+    if (_error != null) {
+      return ColoredBox(
+        color: const Color(0xFFF4F1E8),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Impossible de charger le fond de carte.'),
+              TextButton(onPressed: _loadStyle, child: const Text('Réessayer')),
+            ],
+          ),
+        ),
+      );
+    }
+    return const ColoredBox(
+      color: Color(0xFFF4F1E8),
+      child: Center(child: CircularProgressIndicator()),
     );
   }
 }
