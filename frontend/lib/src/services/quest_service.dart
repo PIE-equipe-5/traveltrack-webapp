@@ -1,33 +1,29 @@
-import 'dart:convert';
-
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
-
 import '../models/quest.dart';
 import 'supabase_client.dart';
 
 class QuestService {
-  static String get _baseUrl =>
-      dotenv.env['API_BASE_URL'] ?? 'http://localhost:3000';
-
-  // /api/quests now requires a logged-in user (see backend requireAuth),
-  // so the current Supabase session token has to be forwarded.
-  static Future<List<Quest>> fetchQuests() async {
-    final accessToken = supabase.auth.currentSession?.accessToken;
-    final response = await http.get(
-      Uri.parse('$_baseUrl/api/quests'),
-      headers: {
-        if (accessToken != null) 'Authorization': 'Bearer $accessToken',
-      },
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception('Failed to load quests (${response.statusCode})');
+  static void _requireSession() {
+    if (supabase.auth.currentSession == null) {
+      throw StateError('Connectez-vous pour accéder aux quêtes.');
     }
+  }
 
-    final List<dynamic> data = jsonDecode(response.body) as List<dynamic>;
-    return data
-        .map((e) => Quest.fromJson(e as Map<String, dynamic>))
-        .toList();
+  static Future<List<Quest>> fetchQuests() async {
+    _requireSession();
+    final rows = await supabase.from('quests').select();
+    return rows.map(Quest.fromJson).toList();
+  }
+
+  static Future<Quest> fetchQuest(String id) async {
+    _requireSession();
+    final row = await supabase
+        .from('quests')
+        .select()
+        .eq('id', id)
+        .maybeSingle();
+    if (row == null) {
+      throw StateError('Cette quête est introuvable ou inaccessible.');
+    }
+    return Quest.fromJson(row);
   }
 }

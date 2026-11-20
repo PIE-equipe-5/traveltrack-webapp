@@ -63,10 +63,33 @@ The map is rendered natively with [flutter_map](https://pub.dev/packages/flutter
 | `SUPABASE_URL` | backend + frontend | Supabase project URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | backend only | Service role key (never expose to client) |
 | `SUPABASE_ANON_KEY` | frontend only | Public anon key |
-| `API_BASE_URL` | frontend | Backend URL (`http://10.0.2.2:3000` for Android emulator) |
 | `ALLOWED_ORIGIN` | backend | CORS allowed origin |
 | `PORT` | backend | Backend listen port (defaults to `3000`) |
 
 ## Deploy (backend → Render)
 
 Push the repo and connect `backend/` as a Render Web Service. Set env vars in the Render dashboard. The `render.yaml` in `backend/` documents the expected configuration.
+
+The frontend reads quests directly from Supabase using the signed-in user's
+session; it does not need the Express backend for quest list or detail pages.
+Configure `SUPABASE_URL` and `SUPABASE_ANON_KEY` in Vercel and redeploy after
+changes. Never put the service role key in the frontend.
+
+Before enabling direct access, inspect the existing `quests` grants and RLS
+policies in Supabase. Authenticated users need `SELECT` permission and a
+matching RLS policy. For a table intended to expose all quests to every
+authenticated user, the following SQL can be applied in the Supabase SQL
+editor after checking for conflicting existing policies:
+
+```sql
+alter table public.quests enable row level security;
+grant select on public.quests to authenticated;
+create policy "Authenticated users can read quests"
+  on public.quests for select to authenticated using (true);
+```
+
+This policy grants read access to every row, not write access. Other existing
+permissive policies and grants can still allow anonymous access or writes;
+review them separately. Enabling RLS may affect other existing clients.
+If authenticated users see no quests, check the table data and RLS policies;
+an empty response can also mean the current user cannot see any rows.

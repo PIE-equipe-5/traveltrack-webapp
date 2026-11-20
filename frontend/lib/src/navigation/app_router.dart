@@ -15,6 +15,7 @@ import '../views/map_screen.dart';
 import '../views/permission_onboarding_screen.dart';
 import '../views/profile_screen.dart';
 import '../views/quests_list_screen.dart';
+import '../views/quest_detail_screen.dart';
 import '../views/root_tabs_screen.dart';
 import '../views/trip_detail_screen.dart';
 import 'go_router_refresh_stream.dart';
@@ -140,6 +141,12 @@ final GoRouter appRouter = GoRouter(
       path: '/permissions',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const PermissionOnboardingScreen(),
+    ),
+    GoRoute(
+      path: '/quest/:questId',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) =>
+          QuestDetailScreen(questId: state.pathParameters['questId']!),
     ),
     GoRoute(
       path: '/trip/:tripId',

@@ -1,6 +1,15 @@
 enum QuestStatus { available, inProgress, completed }
 
-enum QuestCategory { histoire, gastro, social, sport, nature, culture, all }
+enum QuestCategory {
+  histoire,
+  gastro,
+  social,
+  sport,
+  nature,
+  culture,
+  art,
+  all,
+}
 
 extension QuestCategoryX on QuestCategory {
   String get label {
@@ -17,6 +26,8 @@ extension QuestCategoryX on QuestCategory {
         return 'Nature';
       case QuestCategory.culture:
         return 'Culture';
+      case QuestCategory.art:
+        return 'Art';
       case QuestCategory.all:
         return 'Toutes';
     }
@@ -32,9 +43,14 @@ extension QuestCategoryX on QuestCategory {
         return QuestCategory.sport;
       case 'nature':
         return QuestCategory.nature;
+      case 'culture':
+        return QuestCategory.culture;
+      case 'art':
+        return QuestCategory.art;
       case 'histoire':
-      default:
         return QuestCategory.histoire;
+      default:
+        throw FormatException('Catégorie de quête inconnue : $value');
     }
   }
 }
@@ -69,6 +85,8 @@ class Quest {
   final String imageUrl;
   final double lat;
   final double lng;
+  final String startAddress;
+  final int validationRadiusMeters;
   final QuestStatus status;
 
   const Quest({
@@ -81,6 +99,8 @@ class Quest {
     required this.imageUrl,
     required this.lat,
     required this.lng,
+    this.startAddress = '',
+    this.validationRadiusMeters = 100,
     this.status = QuestStatus.available,
   });
 
@@ -97,6 +117,8 @@ class Quest {
       imageUrl: json['image_url'] as String? ?? '',
       lat: (json['lat'] as num).toDouble(),
       lng: (json['lng'] as num).toDouble(),
+      startAddress: json['start_address'] as String,
+      validationRadiusMeters: (json['validation_radius_meters'] as num).toInt(),
       status: QuestStatusX.fromString(json['status'] as String?),
     );
   }
@@ -112,6 +134,8 @@ class Quest {
       imageUrl: imageUrl,
       lat: lat,
       lng: lng,
+      startAddress: startAddress,
+      validationRadiusMeters: validationRadiusMeters,
       status: status,
     );
   }

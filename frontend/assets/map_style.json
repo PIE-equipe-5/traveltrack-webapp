@@ -1,6 +1,7 @@
 {
   "version": 8,
   "glyphs": "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf",
+  "sprite": "https://tiles.openfreemap.org/sprites/ofm_f384/ofm",
   "sources": {
     "openmaptiles": {
       "type": "vector",
@@ -74,6 +75,28 @@
       "paint": {
         "text-color": "#666666",
         "text-halo-color": "#f4f1e8",
+        "text-halo-width": 1
+      }
+    },
+    {
+      "id": "monument-names",
+      "type": "symbol",
+      "source": "openmaptiles",
+      "source-layer": "poi",
+      "minzoom": 14,
+      "filter": ["in", "subclass", "monument", "castle", "ruins"],
+      "layout": {
+        "icon-image": ["match", ["get", "subclass"], "castle", "castle", "monument"],
+        "text-anchor": "top",
+        "text-field": ["get", "name"],
+        "text-font": ["Noto Sans Regular"],
+        "text-offset": [0, 0.9],
+        "text-optional": true,
+        "text-size": 13
+      },
+      "paint": {
+        "text-color": "#a9430c",
+        "text-halo-color": "#ffffff",
         "text-halo-width": 1
       }
     },

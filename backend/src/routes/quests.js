@@ -31,8 +31,9 @@ router.post('/', requireAdmin, async (req, res) => {
 });
 
 router.get('/:id', async (req, res) => {
-  const { data, error } = await supabase.from('quests').select('*').eq('id', req.params.id).single();
-  if (error) return res.status(404).json({ error: error.message });
+  const { data, error } = await supabase.from('quests').select('*').eq('id', req.params.id).maybeSingle();
+  if (error) return res.status(500).json({ error: error.message });
+  if (!data) return res.status(404).json({ error: 'Quest not found' });
   res.json(data);
 });
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../services/data/mock_data.dart';
 import '../models/quest.dart';
+import '../constants/app_colors.dart';
 
 class TripDetailScreen extends StatelessWidget {
   const TripDetailScreen({super.key, required this.tripId});
@@ -45,7 +46,7 @@ class TripDetailScreen extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text('${quest.distanceKm} km'),
                       const SizedBox(width: 16),
-                      const Icon(Icons.star, size: 20, color: Colors.amber),
+                      const Icon(Icons.star, size: 20, color: AppColors.orange),
                       const SizedBox(width: 4),
                       Text('${quest.xp} XP'),
                     ],

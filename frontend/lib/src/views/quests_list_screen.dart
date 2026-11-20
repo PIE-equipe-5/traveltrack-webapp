@@ -1,12 +1,14 @@
 // lib/src/screens/quest_list_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import '../models/quest.dart';
-import '../services/data/mock_data.dart';
+import '../services/quest_service.dart';
+import '../viewmodels/map_location_viewmodel.dart';
 import '../widgets/quest_card.dart';
 
 class QuestListScreen extends StatefulWidget {
-  const QuestListScreen({Key? key}) : super(key: key);
+  const QuestListScreen({super.key});
 
   @override
   State<QuestListScreen> createState() => _QuestListScreenState();
@@ -16,12 +18,59 @@ class _QuestListScreenState extends State<QuestListScreen> {
   late QuestCategory _selectedCategory;
   late SortType _sortType;
   String _searchQuery = '';
+  List<Quest> _quests = [];
+  bool _isLoading = true;
+  String? _error;
+  final _locationViewModel = MapLocationViewModel();
 
   @override
   void initState() {
     super.initState();
     _selectedCategory = QuestCategory.all;
     _sortType = SortType.distance;
+    _locationViewModel.addListener(_onLocationChanged);
+    _locationViewModel.startTrackingIfAlreadyAllowed();
+    _loadQuests();
+  }
+
+  @override
+  void dispose() {
+    _locationViewModel.removeListener(_onLocationChanged);
+    _locationViewModel.dispose();
+    super.dispose();
+  }
+
+  void _onLocationChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _loadQuests() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final quests = await QuestService.fetchQuests();
+      if (mounted) setState(() => _quests = quests);
+    } catch (error) {
+      if (mounted) {
+        setState(() => _error = 'Impossible de charger les quêtes : $error');
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  double? _distanceKm(Quest quest) {
+    final location = _locationViewModel.currentLocation;
+    if (location == null) return null;
+    return Geolocator.distanceBetween(
+          location.latitude,
+          location.longitude,
+          quest.lat,
+          quest.lng,
+        ) /
+        1000;
   }
 
   @override
@@ -42,7 +91,10 @@ class _QuestListScreenState extends State<QuestListScreen> {
               borderRadius: BorderRadius.circular(24),
               borderSide: const BorderSide(color: Colors.grey),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
           ),
         ),
       ),
@@ -66,6 +118,7 @@ class _QuestListScreenState extends State<QuestListScreen> {
                       _buildCategoryChip(QuestCategory.sport, 'Sport'),
                       _buildCategoryChip(QuestCategory.nature, 'Nature'),
                       _buildCategoryChip(QuestCategory.culture, 'Culture'),
+                      _buildCategoryChip(QuestCategory.art, 'Art'),
                     ],
                   ),
                 ),
@@ -78,12 +131,32 @@ class _QuestListScreenState extends State<QuestListScreen> {
                     _buildFiltersButton(),
                   ],
                 ),
+                if (_sortType == SortType.distance &&
+                    _locationViewModel.currentLocation == null)
+                  const Text(
+                    'Activez la localisation sur la carte pour trier par distance.',
+                  ),
               ],
             ),
           ),
           // Liste des quêtes
           Expanded(
-            child: filtered.isEmpty
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(_error!, textAlign: TextAlign.center),
+                        TextButton(
+                          onPressed: _loadQuests,
+                          child: const Text('Réessayer'),
+                        ),
+                      ],
+                    ),
+                  )
+                : filtered.isEmpty
                 ? Center(
                     child: Text(
                       'Aucune quête trouvée',
@@ -91,10 +164,16 @@ class _QuestListScreenState extends State<QuestListScreen> {
                     ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
-                      return QuestCard(quest: filtered[index]);
+                      return QuestCard(
+                        quest: filtered[index],
+                        distanceKm: _distanceKm(filtered[index]),
+                      );
                     },
                   ),
           ),
@@ -104,7 +183,7 @@ class _QuestListScreenState extends State<QuestListScreen> {
   }
 
   List<Quest> _getFilteredAndSortedQuests() {
-    List<Quest> quests = MockData.quests;
+    List<Quest> quests = [..._quests];
 
     // Filtrer par catégorie
     if (_selectedCategory != QuestCategory.all) {
@@ -114,14 +193,21 @@ class _QuestListScreenState extends State<QuestListScreen> {
     // Filtrer par recherche
     if (_searchQuery.isNotEmpty) {
       quests = quests
-          .where((q) =>
-              q.title.toLowerCase().contains(_searchQuery.toLowerCase()))
+          .where(
+            (q) =>
+                q.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                q.startAddress.toLowerCase().contains(
+                  _searchQuery.toLowerCase(),
+                ),
+          )
           .toList();
     }
 
     // Trier
     if (_sortType == SortType.distance) {
-      quests.sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
+      if (_locationViewModel.currentLocation != null) {
+        quests.sort((a, b) => _distanceKm(a)!.compareTo(_distanceKm(b)!));
+      }
     } else if (_sortType == SortType.xp) {
       quests.sort((a, b) => b.xp.compareTo(a.xp));
     } else if (_sortType == SortType.alphabetic) {
@@ -142,13 +228,15 @@ class _QuestListScreenState extends State<QuestListScreen> {
           setState(() => _selectedCategory = category);
         },
         backgroundColor: Colors.white,
-        selectedColor: Colors.black,
+        selectedColor: Theme.of(context).colorScheme.primary,
         labelStyle: TextStyle(
           color: isSelected ? Colors.white : Colors.black,
           fontWeight: FontWeight.w500,
         ),
         side: BorderSide(
-          color: isSelected ? Colors.black : Colors.grey[300]!,
+          color: isSelected
+              ? Theme.of(context).colorScheme.primary
+              : Colors.grey[300]!,
         ),
       ),
     );
@@ -169,10 +257,7 @@ class _QuestListScreenState extends State<QuestListScreen> {
             value: SortType.distance,
             child: const Text('↓ Distance'),
           ),
-          DropdownMenuItem(
-            value: SortType.xp,
-            child: const Text('↓ XP'),
-          ),
+          DropdownMenuItem(value: SortType.xp, child: const Text('↓ XP')),
           DropdownMenuItem(
             value: SortType.alphabetic,
             child: const Text('↓ Alphabétique'),

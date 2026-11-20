@@ -13,6 +13,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/quest.dart';
 import '../services/quest_service.dart';
+import '../widgets/nearby_quest_panel.dart';
+import '../widgets/quest_image.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -27,9 +29,11 @@ class _MapScreenState extends State<MapScreen> {
   static const _proximityCircleRadiusInMeters = 80.0;
   static const _minimumMapZoom = 5.5;
   static const _userRecenterZoom = 16.0;
+  static const _expandedSheetControlsBottom = 214.0;
 
   List<Quest> _quests = [];
   String? _error;
+  String _searchQuery = '';
   QuestCategory? _selectedCategory; // null = "Toutes"
   bool _isNearbySheetDismissed = false;
 
@@ -106,12 +110,15 @@ class _MapScreenState extends State<MapScreen> {
   Future<void> _loadQuests() async {
     try {
       final quests = await QuestService.fetchQuests();
+      if (!mounted) return;
       setState(() {
         _quests = quests;
         _error = null;
       });
     } catch (e) {
-      setState(() => _error = 'Impossible de charger les quêtes: $e');
+      if (mounted) {
+        setState(() => _error = 'Impossible de charger les quêtes: $e');
+      }
     }
   }
 
@@ -143,14 +150,24 @@ class _MapScreenState extends State<MapScreen> {
         return Icons.park;
       case QuestCategory.culture:
         return Icons.museum;
+      case QuestCategory.art:
+        return Icons.palette;
       case QuestCategory.all:
         return Icons.apps;
     }
   }
 
   List<Quest> get _filteredQuests {
-    if (_selectedCategory == null) return _quests;
-    return _quests.where((q) => q.category == _selectedCategory).toList();
+    final query = _searchQuery.trim().toLowerCase();
+    return _quests.where((quest) {
+      final matchesCategory =
+          _selectedCategory == null || quest.category == _selectedCategory;
+      final matchesSearch =
+          query.isEmpty ||
+          quest.title.toLowerCase().contains(query) ||
+          quest.startAddress.toLowerCase().contains(query);
+      return matchesCategory && matchesSearch;
+    }).toList();
   }
 
   Quest? get _nearestQuest {
@@ -164,8 +181,9 @@ class _MapScreenState extends State<MapScreen> {
   @override
   Widget build(BuildContext context) {
     final quests = _filteredQuests;
-    final nearest = _isNearbySheetDismissed ? null : _nearestQuest;
     final userLatLng = _userLatLng;
+    final nearest = userLatLng == null ? null : _nearestQuest;
+    final isNearbySheetExpanded = nearest != null && !_isNearbySheetDismissed;
     final isFollowingUser =
         _locationViewModel.isFollowingUser &&
         _locationViewModel.status == UserLocationStatus.tracking;
@@ -209,11 +227,12 @@ class _MapScreenState extends State<MapScreen> {
                       ...quests.map((quest) {
                         return Marker(
                           point: LatLng(quest.lat, quest.lng),
-                          width: 40,
-                          height: 40,
+                          width: 48,
+                          height: 48,
                           child: GestureDetector(
                             onTap: () => context.push('/quest/${quest.id}'),
                             child: _QuestPin(
+                              imageUrl: quest.imageUrl,
                               icon: _iconForCategory(quest.category),
                             ),
                           ),
@@ -243,7 +262,7 @@ class _MapScreenState extends State<MapScreen> {
 
             Positioned(
               left: 8,
-              bottom: nearest != null ? 190 : 8,
+              bottom: isNearbySheetExpanded ? _expandedSheetControlsBottom : 8,
               child: const _MapAttribution(),
             ),
 
@@ -254,7 +273,12 @@ class _MapScreenState extends State<MapScreen> {
               right: 12,
               child: Column(
                 children: [
-                  const _SearchBar(),
+                  _SearchBar(
+                    onChanged: (value) => setState(() {
+                      _searchQuery = value;
+                      _isNearbySheetDismissed = false;
+                    }),
+                  ),
                   const SizedBox(height: 10),
                   _CategoryFilters(
                     selected: _selectedCategory,
@@ -278,9 +302,17 @@ class _MapScreenState extends State<MapScreen> {
                       borderRadius: BorderRadius.circular(8),
                       child: Padding(
                         padding: const EdgeInsets.all(12),
-                        child: Text(
-                          _error!,
-                          style: TextStyle(color: Colors.red.shade900),
+                        child: Column(
+                          children: [
+                            Text(
+                              _error!,
+                              style: TextStyle(color: Colors.red.shade900),
+                            ),
+                            TextButton(
+                              onPressed: _loadQuests,
+                              child: const Text('Réessayer'),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -302,7 +334,7 @@ class _MapScreenState extends State<MapScreen> {
             // --- Bouton localisation ---
             Positioned(
               right: 12,
-              bottom: nearest != null ? 190 : 20,
+              bottom: isNearbySheetExpanded ? _expandedSheetControlsBottom : 20,
               child: _RoundIconButton(
                 icon: _locationButtonIcon,
                 iconColor: isFollowingUser
@@ -320,11 +352,19 @@ class _MapScreenState extends State<MapScreen> {
               Positioned(
                 left: 0,
                 right: 0,
-                bottom: 0,
-                child: _NearbyQuestSheet(
-                  quest: nearest,
-                  distanceKm: _distanceKm(nearest),
-                  onClose: () => setState(() => _isNearbySheetDismissed = true),
+                bottom: 8,
+                child: NearbyQuestPanel(
+                  isExpanded: isNearbySheetExpanded,
+                  onExpand: () =>
+                      setState(() => _isNearbySheetDismissed = false),
+                  onCollapse: () =>
+                      setState(() => _isNearbySheetDismissed = true),
+                  child: _NearbyQuestSheet(
+                    quest: nearest,
+                    distanceKm: _distanceKm(nearest),
+                    onClose: () =>
+                        setState(() => _isNearbySheetDismissed = true),
+                  ),
                 ),
               ),
           ],
@@ -387,6 +427,8 @@ class _MapBackground extends StatefulWidget {
 
 class _MapBackgroundState extends State<_MapBackground> {
   vt.Style? _style;
+  vt.Theme? _baseTheme;
+  vt.Theme? _monumentTheme;
   Object? _error;
 
   @override
@@ -406,7 +448,21 @@ class _MapBackgroundState extends State<_MapBackground> {
         style.dispose();
         return;
       }
-      setState(() => _style = style);
+      final layers = style.theme.layers;
+      final baseTheme = vt.Theme(
+        id: '${style.theme.id}-base',
+        layers: layers.where((layer) => layer.id != 'monument-names').toList(),
+        light: style.theme.light,
+      );
+      final monumentTheme = vt.Theme(
+        id: '${style.theme.id}-monuments',
+        layers: layers.where((layer) => layer.id == 'monument-names').toList(),
+      );
+      setState(() {
+        _style = style;
+        _baseTheme = baseTheme;
+        _monumentTheme = monumentTheme;
+      });
     } catch (error, stackTrace) {
       debugPrint(
         'Impossible de charger le fond de carte : $error\n$stackTrace',
@@ -424,12 +480,28 @@ class _MapBackgroundState extends State<_MapBackground> {
   @override
   Widget build(BuildContext context) {
     final style = _style;
-    if (style != null) {
-      return vt.VectorTileLayer(
-        theme: style.theme,
-        tileProviders: style.providers,
-        glyphs: style.glyphs,
-        logger: const vt.Logger.console(),
+    final baseTheme = _baseTheme;
+    final monumentTheme = _monumentTheme;
+    if (style != null && baseTheme != null && monumentTheme != null) {
+      return Stack(
+        children: [
+          vt.VectorTileLayer(
+            theme: baseTheme,
+            tileProviders: style.providers,
+            glyphs: style.glyphs,
+            sprites: style.sprites,
+            logger: const vt.Logger.console(),
+          ),
+          if (MapCamera.of(context).zoom >= 14)
+            vt.VectorTileLayer(
+              theme: monumentTheme,
+              tileProviders: style.providers,
+              glyphs: style.glyphs,
+              sprites: style.sprites,
+              tileOffset: vt.TileOffset.none,
+              logger: const vt.Logger.console(),
+            ),
+        ],
       );
     }
     if (_error != null) {
@@ -454,18 +526,18 @@ class _MapBackgroundState extends State<_MapBackground> {
 }
 
 class _QuestPin extends StatelessWidget {
-  const _QuestPin({required this.icon});
+  const _QuestPin({required this.icon, required this.imageUrl});
 
   final IconData icon;
+  final String imageUrl;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 36,
-      height: 36,
       decoration: BoxDecoration(
-        color: Colors.black,
+        color: Theme.of(context).colorScheme.primary,
         shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 2),
         boxShadow: [
           BoxShadow(
             color: Colors.black26,
@@ -474,13 +546,19 @@ class _QuestPin extends StatelessWidget {
           ),
         ],
       ),
-      child: Icon(icon, color: Colors.white, size: 18),
+      child: ClipOval(
+        child: imageUrl.trim().isEmpty
+            ? Icon(icon, color: Colors.white, size: 20)
+            : QuestImage(imageUrl: imageUrl, width: 48, height: 48),
+      ),
     );
   }
 }
 
 class _SearchBar extends StatelessWidget {
-  const _SearchBar();
+  const _SearchBar({required this.onChanged});
+
+  final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -504,6 +582,7 @@ class _SearchBar extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: TextField(
+              onChanged: onChanged,
               decoration: const InputDecoration(
                 hintText: 'Rechercher une quête...',
                 border: InputBorder.none,
@@ -572,7 +651,9 @@ class _FilterChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.black : Colors.white,
+          color: isSelected
+              ? Theme.of(context).colorScheme.primary
+              : Colors.white,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
@@ -814,14 +895,11 @@ class _NearbyQuestSheet extends StatelessWidget {
               const SizedBox(width: 16),
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-                child: quest.imageUrl.isEmpty
-                    ? Container(width: 56, height: 56, color: Colors.grey[200])
-                    : Image.network(
-                        quest.imageUrl,
-                        width: 56,
-                        height: 56,
-                        fit: BoxFit.cover,
-                      ),
+                child: QuestImage(
+                  imageUrl: quest.imageUrl,
+                  width: 56,
+                  height: 56,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -875,7 +953,7 @@ class _NearbyQuestSheet extends StatelessWidget {
                     height: 44,
                     child: FilledButton(
                       style: FilledButton.styleFrom(
-                        backgroundColor: Colors.black,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(22),
                         ),

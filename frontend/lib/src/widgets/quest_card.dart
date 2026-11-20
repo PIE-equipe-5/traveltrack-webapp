@@ -3,16 +3,19 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../models/quest.dart';
+import '../constants/app_colors.dart';
+import 'quest_image.dart';
 
 class QuestCard extends StatelessWidget {
   final Quest quest;
+  final double? distanceKm;
 
-  const QuestCard({required this.quest, Key? key}) : super(key: key);
+  const QuestCard({required this.quest, this.distanceKm, super.key});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push('/trip/${quest.id}'),
+      onTap: () => context.push('/quest/${quest.id}'),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
@@ -20,7 +23,7 @@ class QuestCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -31,9 +34,11 @@ class QuestCard extends StatelessWidget {
           children: [
             // Image
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-              child: Image.network(
-                quest.imageUrl,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
+              child: QuestImage(
+                imageUrl: quest.imageUrl,
                 height: 160,
                 width: double.infinity,
                 fit: BoxFit.cover,
@@ -50,9 +55,12 @@ class QuestCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: Colors.grey[200],
+                          color: AppColors.paleOrange,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -60,7 +68,7 @@ class QuestCard extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: Colors.black54,
+                            color: AppColors.orange,
                           ),
                         ),
                       ),
@@ -79,24 +87,23 @@ class QuestCard extends StatelessWidget {
                     quest.description,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 12),
                   // Distance + XP
                   Row(
                     children: [
-                      Text(
-                        '${quest.distanceKm.toStringAsFixed(1)} km',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                      if (distanceKm != null) ...[
+                        Text(
+                          '${distanceKm!.toStringAsFixed(1)} km',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      const Icon(Icons.star, size: 14, color: Colors.amber),
+                        const SizedBox(width: 16),
+                      ],
+                      const Icon(Icons.star, size: 14, color: AppColors.orange),
                       const SizedBox(width: 4),
                       Text(
                         '+${quest.xp} XP',

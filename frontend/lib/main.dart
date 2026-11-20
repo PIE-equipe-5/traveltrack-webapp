@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:traveltrack/src/navigation/router_screen_view_tracker.dart';
+import 'package:traveltrack/src/constants/app_colors.dart';
 import 'package:traveltrack/src/services/analytics_service.dart';
 import 'package:traveltrack/src/viewmodels/analytics_consent_viewmodel.dart';
 
@@ -36,13 +37,43 @@ class TravelTrackApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'TravelTrack',
-      theme: ThemeData(colorSchemeSeed: Colors.teal, useMaterial3: true),
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: AppColors.orange,
+          primary: AppColors.orange,
+          onPrimary: Colors.white,
+          surface: Colors.white,
+          secondaryContainer: AppColors.paleOrange,
+          onSecondaryContainer: AppColors.orange,
+        ),
+        scaffoldBackgroundColor: Colors.white,
+        appBarTheme: const AppBarTheme(backgroundColor: Colors.white),
+        navigationBarTheme: NavigationBarThemeData(
+          backgroundColor: Colors.white,
+          indicatorColor: AppColors.paleOrange,
+          iconTheme: WidgetStateProperty.resolveWith(
+            (states) => IconThemeData(
+              color: states.contains(WidgetState.selected)
+                  ? AppColors.orange
+                  : Colors.black54,
+            ),
+          ),
+          labelTextStyle: WidgetStateProperty.resolveWith(
+            (states) => TextStyle(
+              color: states.contains(WidgetState.selected)
+                  ? AppColors.orange
+                  : Colors.black87,
+            ),
+          ),
+        ),
+      ),
       routerConfig: appRouter,
       builder: (context, child) {
         // Force un rendu "mobile" même sur web/desktop :
         // on centre le contenu dans un cadre de largeur max type smartphone.
         return Container(
-          color: const Color(0xFFEFEFEF), // fond gris autour du "téléphone"
+          color: const Color(0xFFFFF3EB), // fond autour du "téléphone"
           child: Center(
             child: Container(
               constraints: const BoxConstraints(

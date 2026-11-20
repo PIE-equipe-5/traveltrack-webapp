@@ -12,6 +12,13 @@ flutter pub get
 flutter run
 ```
 
+The quest list and map read the Supabase `quests` table using the signed-in
+user's session. Each marker uses the stored `lat` and `lng`; `start_address`
+is displayed on the quest detail page, rather than geocoded by the app. Enable
+RLS and grant authenticated users SELECT access to the table as described in
+the root README. An empty list can indicate either no quests or an RLS policy
+that does not permit the current user to read them.
+
 ## Structure
 
 ```

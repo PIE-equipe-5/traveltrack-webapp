@@ -1,5 +1,6 @@
 // lib/src/views/profile_screen.dart
 import 'package:flutter/material.dart';
+import 'package:traveltrack/src/constants/app_colors.dart';
 import 'package:traveltrack/src/viewmodels/analytics_consent_viewmodel.dart';
 import 'package:traveltrack/src/viewmodels/auth_viewmodel.dart';
 import 'package:traveltrack/src/widgets/analytics_consent_tile.dart';
@@ -46,7 +47,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     {'icon': Icons.shield, 'label': 'Shield Master', 'color': Colors.amber},
     {'icon': Icons.restaurant, 'label': 'Food Explorer', 'color': Colors.orange},
     {'icon': Icons.music_note, 'label': 'Music Lover', 'color': Colors.purple},
-    {'icon': Icons.location_on, 'label': 'Navigator', 'color': Colors.teal},
+    {'icon': Icons.location_on, 'label': 'Navigator', 'color': AppColors.orange},
   ];
 
   // Mock Quêtes
@@ -186,7 +187,7 @@ class _ProfileHeader extends StatelessWidget {
               CircleAvatar(
                 radius: 50,
                 backgroundImage: NetworkImage(avatarUrl),
-                backgroundColor: Colors.teal.withOpacity(0.1),
+                backgroundColor: AppColors.orange.withValues(alpha: 0.1),
               ),
               Positioned(
                 bottom: 0,
@@ -194,7 +195,7 @@ class _ProfileHeader extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.teal,
+                    color: AppColors.orange,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(Icons.star, color: Colors.white, size: 16),
@@ -304,7 +305,7 @@ class _StatItem extends StatelessWidget {
           style: const TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: Colors.teal,
+            color: AppColors.orange,
           ),
         ),
         const SizedBox(height: 4),
@@ -349,7 +350,7 @@ class _ProgressionSection extends StatelessWidget {
                 },
                 child: const Text(
                   'Voir tout',
-                  style: TextStyle(color: Colors.teal),
+                  style: TextStyle(color: AppColors.orange),
                 ),
               ),
             ],
@@ -400,7 +401,7 @@ class _CountryProgressItem extends StatelessWidget {
                       '${(progress * 100).toInt()}%',
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
-                        color: Colors.teal,
+                        color: AppColors.orange,
                       ),
                     ),
                   ],
@@ -412,7 +413,7 @@ class _CountryProgressItem extends StatelessWidget {
                     value: progress,
                     minHeight: 8,
                     backgroundColor: Colors.grey[300],
-                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.teal),
+                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.orange),
                   ),
                 ),
               ],
@@ -512,9 +513,9 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
       color: Theme.of(context).scaffoldBackgroundColor,
       child: TabBar(
         controller: tabController,
-        labelColor: Colors.teal,
+        labelColor: AppColors.orange,
         unselectedLabelColor: Colors.grey,
-        indicatorColor: Colors.teal,
+        indicatorColor: AppColors.orange,
         indicatorWeight: 3,
         tabs: tabs.map((t) => Tab(text: t)).toList(),
       ),
@@ -587,10 +588,10 @@ class _QuestItem extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: Colors.teal.withOpacity(0.1),
+              color: AppColors.orange.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.explore, color: Colors.teal, size: 28),
+            child: const Icon(Icons.explore, color: AppColors.orange, size: 28),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -600,7 +601,7 @@ class _QuestItem extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.teal.withOpacity(0.1),
+                    color: AppColors.orange.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -608,7 +609,7 @@ class _QuestItem extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
-                      color: Colors.teal,
+                      color: AppColors.orange,
                     ),
                   ),
                 ),
