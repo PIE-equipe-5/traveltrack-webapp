@@ -75,6 +75,12 @@ session; it does not need the Express backend for quest list or detail pages.
 Configure `SUPABASE_URL` and `SUPABASE_ANON_KEY` in Vercel and redeploy after
 changes. Never put the service role key in the frontend.
 
+The profile displays the signed-in Supabase Auth user's email, registration
+name (`first_name` and `last_name`), and, when provided by an OAuth provider,
+name and avatar. Profile statistics, badges, country progress, completed
+quests, and photos are shown as unavailable until their data sources are
+connected; the screen does not use mock values.
+
 Before enabling direct access, inspect the existing `quests` grants and RLS
 policies in Supabase. Authenticated users need `SELECT` permission and a
 matching RLS policy. For a table intended to expose all quests to every
@@ -93,3 +99,24 @@ permissive policies and grants can still allow anonymous access or writes;
 review them separately. Enabling RLS may affect other existing clients.
 If authenticated users see no quests, check the table data and RLS policies;
 an empty response can also mean the current user cannot see any rows.
+
+### Admin quest creation
+
+The quest list exposes an add button when Supabase Auth **App Metadata**
+contains `{"role": "admin"}`. Configure this trusted metadata using the
+Supabase dashboard or Admin API with the service role; never use editable
+User Metadata for authorization. Sign out and back in after changing the role
+to refresh the session and JWT. A revoked role may remain in an existing JWT
+until that token expires or is refreshed.
+
+Creation writes directly to `public.quests` with the user's JWT and does not
+require Express. The button and route are not security boundaries: before
+enabling this feature, review the table's existing grants and RLS policies and
+apply [quests_admin_insert.sql](backend/supabase/quests_admin_insert.sql)
+in Supabase. Permissive policies combine with OR: any other INSERT policy or
+grant for `anon`/`authenticated` may allow non-admin writes and must be
+reviewed separately. Enabling RLS can affect other clients. The script does
+not modify existing policies and must only be applied once.
+
+Enter latitude and longitude separately from the address; the app does not
+geocode it. The optional image field accepts an HTTP(S) URL, not a file upload.

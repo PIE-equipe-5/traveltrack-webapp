@@ -32,6 +32,7 @@ class _MapScreenState extends State<MapScreen> {
   static const _expandedSheetControlsBottom = 214.0;
 
   List<Quest> _quests = [];
+  int _questLoadVersion = 0;
   String? _error;
   String _searchQuery = '';
   QuestCategory? _selectedCategory; // null = "Toutes"
@@ -51,11 +52,13 @@ class _MapScreenState extends State<MapScreen> {
       _applyRecenterRequest,
     );
     _locationViewModel.startTrackingIfAlreadyAllowed();
+    QuestService.changes.addListener(_loadQuests);
     _loadQuests();
   }
 
   @override
   void dispose() {
+    QuestService.changes.removeListener(_loadQuests);
     _recenterRequestSubscription?.cancel();
     _locationViewModel.removeListener(_onUserLocationStateChanged);
     _locationViewModel.dispose();
@@ -108,15 +111,16 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _loadQuests() async {
+    final version = ++_questLoadVersion;
     try {
       final quests = await QuestService.fetchQuests();
-      if (!mounted) return;
+      if (!mounted || version != _questLoadVersion) return;
       setState(() {
         _quests = quests;
         _error = null;
       });
     } catch (e) {
-      if (mounted) {
+      if (mounted && version == _questLoadVersion) {
         setState(() => _error = 'Impossible de charger les quêtes: $e');
       }
     }

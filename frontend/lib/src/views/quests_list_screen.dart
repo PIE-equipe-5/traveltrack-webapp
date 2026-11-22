@@ -2,8 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:go_router/go_router.dart';
 import '../models/quest.dart';
 import '../services/quest_service.dart';
+import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/map_location_viewmodel.dart';
 import '../widgets/quest_card.dart';
 
@@ -19,6 +21,7 @@ class _QuestListScreenState extends State<QuestListScreen> {
   late SortType _sortType;
   String _searchQuery = '';
   List<Quest> _quests = [];
+  int _questLoadVersion = 0;
   bool _isLoading = true;
   String? _error;
   final _locationViewModel = MapLocationViewModel();
@@ -30,11 +33,13 @@ class _QuestListScreenState extends State<QuestListScreen> {
     _sortType = SortType.distance;
     _locationViewModel.addListener(_onLocationChanged);
     _locationViewModel.startTrackingIfAlreadyAllowed();
+    QuestService.changes.addListener(_loadQuests);
     _loadQuests();
   }
 
   @override
   void dispose() {
+    QuestService.changes.removeListener(_loadQuests);
     _locationViewModel.removeListener(_onLocationChanged);
     _locationViewModel.dispose();
     super.dispose();
@@ -45,19 +50,24 @@ class _QuestListScreenState extends State<QuestListScreen> {
   }
 
   Future<void> _loadQuests() async {
+    final version = ++_questLoadVersion;
     setState(() {
       _isLoading = true;
       _error = null;
     });
     try {
       final quests = await QuestService.fetchQuests();
-      if (mounted) setState(() => _quests = quests);
+      if (mounted && version == _questLoadVersion) {
+        setState(() => _quests = quests);
+      }
     } catch (error) {
-      if (mounted) {
+      if (mounted && version == _questLoadVersion) {
         setState(() => _error = 'Impossible de charger les quêtes : $error');
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted && version == _questLoadVersion) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -97,6 +107,19 @@ class _QuestListScreenState extends State<QuestListScreen> {
             ),
           ),
         ),
+        actions: [
+          StreamBuilder(
+            stream: authViewModel.authStateChanges,
+            builder: (context, snapshot) {
+              if (!authViewModel.isAdmin) return const SizedBox.shrink();
+              return IconButton(
+                tooltip: 'Ajouter une quête',
+                icon: const Icon(Icons.add_circle_outline),
+                onPressed: () => context.push('/admin/quests/new'),
+              );
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [

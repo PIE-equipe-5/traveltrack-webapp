@@ -70,6 +70,47 @@ extension QuestStatusX on QuestStatus {
   }
 }
 
+class NewQuest {
+  const NewQuest({
+    required this.title,
+    required this.category,
+    required this.description,
+    required this.xp,
+    required this.imageUrl,
+    required this.lat,
+    required this.lng,
+    required this.startAddress,
+    required this.validationRadiusMeters,
+  });
+
+  final String title;
+  final QuestCategory category;
+  final String? description;
+  final int xp;
+  final String? imageUrl;
+  final double lat;
+  final double lng;
+  final String startAddress;
+  final int validationRadiusMeters;
+
+  Map<String, dynamic> toJson() {
+    if (category == QuestCategory.all) {
+      throw ArgumentError('Une catégorie de quête est requise.');
+    }
+    return {
+      'title': title,
+      'category': category.name,
+      'description': description,
+      'xp': xp,
+      'image_url': imageUrl,
+      'lat': lat,
+      'lng': lng,
+      'start_address': startAddress,
+      'validation_radius_meters': validationRadiusMeters,
+    };
+  }
+}
+
 class Quest {
   final String id;
   final String title;

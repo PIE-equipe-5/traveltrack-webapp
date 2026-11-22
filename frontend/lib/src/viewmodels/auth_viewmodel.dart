@@ -44,6 +44,9 @@ class AuthViewModel extends ChangeNotifier {
 
   bool get isAuthenticated => _authService.currentSession != null;
 
+  bool get isAdmin =>
+      isAuthenticated && currentUser?.appMetadata['role'] == 'admin';
+
   Stream<AuthState> get authStateChanges => _authService.authStateChanges;
 
   Future<bool> signUp({

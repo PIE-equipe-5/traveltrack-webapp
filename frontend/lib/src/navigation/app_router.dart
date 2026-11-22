@@ -11,6 +11,7 @@ import '../services/supabase_client.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../views/auth/login_screen.dart';
 import '../views/auth/register_screen.dart';
+import '../views/add_quest_screen.dart';
 import '../views/map_screen.dart';
 import '../views/permission_onboarding_screen.dart';
 import '../views/profile_screen.dart';
@@ -71,6 +72,10 @@ final GoRouter appRouter = GoRouter(
 
     if (!loggedIn && !loggingIn) return '/auth/login';
     if (loggedIn && loggingIn) return '/map';
+    if (state.matchedLocation == '/admin/quests/new' &&
+        !authViewModel.isAdmin) {
+      return '/quests';
+    }
     return null;
   },
   routes: [
@@ -130,13 +135,21 @@ final GoRouter appRouter = GoRouter(
         ),
         StatefulShellBranch(
           routes: [
-            GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
+            GoRoute(
+              path: '/profile',
+              builder: (context, state) => const ProfileScreen(),
+            ),
           ],
         ),
       ],
     ),
 
     // ===== DETAIL ROUTES =====
+    GoRoute(
+      path: '/admin/quests/new',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const AddQuestScreen(),
+    ),
     GoRoute(
       path: '/permissions',
       parentNavigatorKey: _rootNavigatorKey,
@@ -151,9 +164,8 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/trip/:tripId',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => TripDetailScreen(
-        tripId: state.pathParameters['tripId']!,
-      ),
+      builder: (context, state) =>
+          TripDetailScreen(tripId: state.pathParameters['tripId']!),
     ),
   ],
 );
